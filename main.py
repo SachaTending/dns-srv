@@ -39,6 +39,10 @@ def handle(addr: tuple[str, int], data: bytes):
                 ans = DNSRecord.parse(a_pkt)
                 if ans.header.rcode == getattr(RCODE, "NXDOMAIN"):
                     continue
+                else:
+                    logger.info("Domain found")
+                    sock.sendto(a_pkt, addr)
+                    return
     logger.info("Domain not found.")
     resp = dnsrec.reply()
     resp.header.rcode = getattr(RCODE, "NXDOMAIN")
