@@ -1,5 +1,5 @@
 from loguru import logger
-from dnslib import DNSRecord, RR, RCODE, DNSLabel, QTYPE
+from dnslib import DNSRecord, RR, RCODE, DNSLabel, A, QTYPE
 from socket import socket, AF_INET, SOCK_DGRAM
 import json
 
@@ -20,13 +20,19 @@ def handle(addr: tuple[str, int], data: bytes):
     dnsrec = DNSRecord.parse(data)
     domain: str = dnsrec.q.qname
     logger.info(f"Request:\n{dnsrec}")
+    if dnsrec.q.qtype != getattr(QTYPE, "A"):
+        rep = dnsrec.reply()
+        rep.header.rcode = getattr(RCODE, "NXDOMAIN")
+        logger.info("Requested invalid type, sending NXDOMAIN...")
+        sock.sendto(rep.pack(), addr)
+        return
     logger.info(f"Looking for domain {domain} in domains.json")
     domains = json.load(open("domains.json"))
     for i in domains:
         if remove_suffix(domain, ".") == i:
             logger.info(f"{domain} = {domains[i]['A']}")
             out = dnsrec.reply()
-            out.add_answer(*RR.fromZone(f"{remove_suffix(domain, '.')} {QTYPE[dnsrec.q.qtype]} {domains[i]['A']}"))
+            out.add_answer(RR(remove_suffix(domain, "."), rdata=A(domains[i]['A'])))
             sock.sendto(out.pack(), addr)
             logger.success(f"{addr}({domain}) Done!")
             return
