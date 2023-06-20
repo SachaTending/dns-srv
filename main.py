@@ -1,5 +1,5 @@
 from loguru import logger
-from dnslib import DNSRecord, RR, RCODE
+from dnslib import DNSRecord, RR, RCODE, DNSLabel
 from socket import socket, AF_INET, SOCK_DGRAM
 import json
 
@@ -11,6 +11,7 @@ sock = socket(AF_INET, SOCK_DGRAM)
 sock.bind(('', 53))
 
 def remove_suffix(text: str, t2: str) -> str: 
+    if isinstance(text, DNSLabel): text = str(text)
     if text.endswith(t2): return text[:-len(t2)]
     else: return text
 
