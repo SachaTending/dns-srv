@@ -1,5 +1,5 @@
 from loguru import logger
-from dnslib import DNSRecord, RR, RCODE, DNSLabel
+from dnslib import DNSRecord, RR, RCODE, DNSLabel, QTYPE
 from socket import socket, AF_INET, SOCK_DGRAM
 import json
 
@@ -26,7 +26,7 @@ def handle(addr: tuple[str, int], data: bytes):
         if remove_suffix(domain, ".") == i:
             logger.info(f"{domain} = {domains[i]['A']}")
             out = dnsrec.reply()
-            out.add_answer(*RR.fromZone(f"{remove_suffix(domain, '.')} A {domains[i]['A']}"))
+            out.add_answer(*RR.fromZone(f"{remove_suffix(domain, '.')} {QTYPE[dnsrec.q.qtype]} {domains[i]['A']}"))
             sock.sendto(out.pack(), addr)
             logger.success(f"{addr}({domain}) Done!")
             return
