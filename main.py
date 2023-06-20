@@ -10,6 +10,10 @@ logger.info("Starting...")
 sock = socket(AF_INET, SOCK_DGRAM)
 sock.bind(('', 53))
 
+def remove_suffix(text: str, t2: str) -> str: 
+    if text.endswith(t2): return text[:-len(t2)]
+    else: return text
+
 def handle(addr: tuple[str, int], data: bytes):
     logger.info(f"Received connection from {addr}")
     dnsrec = DNSRecord.parse(data)
@@ -18,10 +22,10 @@ def handle(addr: tuple[str, int], data: bytes):
     logger.info(f"Looking for domain {domain} in domains.json")
     domains = json.load(open("domains.json"))
     for i in domains:
-        if domain.removesuffix(".") == i:
+        if remove_suffix(domain, ".") == i:
             logger.info(f"{domain} = {domains[i]['A']}")
             out = dnsrec.reply()
-            out.add_answer(*RR.fromZone(f"{domain.removesuffix('.')} A {domains[i]['A']}"))
+            out.add_answer(*RR.fromZone(f"{remove_suffix(domain, '.')} A {domains[i]['A']}"))
             sock.sendto(out.pack(), addr)
             logger.success(f"{addr}({domain}) Done!")
             return
