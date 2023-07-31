@@ -17,7 +17,11 @@ def remove_suffix(text: str, t2: str) -> str:
 
 def handle(addr: tuple[str, int], data: bytes):
     logger.info(f"Received connection from {addr}")
-    dnsrec = DNSRecord.parse(data)
+    try:
+        dnsrec = DNSRecord.parse(data)
+    except:
+        logger.exception("Exception on decoding.")
+        return
     domain: str = dnsrec.q.qname
     logger.info(f"Request:\n{dnsrec}")
     if dnsrec.q.qtype != getattr(QTYPE, "A"):
@@ -41,7 +45,10 @@ def handle(addr: tuple[str, int], data: bytes):
     for i in nodes:
         if isinstance(i, str):
             if not i.startswith("#"):
-                a_pkt = dnsrec.send(i)
+                try: a_pkt = dnsrec.send(i, timeout=10)
+                except:
+                    logger.info(f"Timeout on addr {addr}")
+                    pass
                 ans = DNSRecord.parse(a_pkt)
                 if ans.header.rcode == getattr(RCODE, "NXDOMAIN"):
                     continue
